@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e293b" />
+  <title>내일 날씨 준비 · 옷차림·우산 알리미</title>
+  <meta name="description" content="출근·여행 전날 밤, 내일 날씨(기온·습도·비·구름)를 확인하고 옷차림과 우산 등 챙길 것을 심층적으로 정리해주는 앱" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>" />
+</head>
+<body>
+  <div class="app">
+    <header class="hero">
+      <h1>🌤️ 내일 날씨 준비</h1>
+      <p class="subtitle">출근·여행 전날 밤, 내일 챙길 것을 미리 정리하세요</p>
+
+      <form id="searchForm" class="search" autocomplete="off">
+        <input
+          id="cityInput"
+          type="text"
+          placeholder="도시 이름 검색 (예: 서울, 부산, Tokyo)"
+          aria-label="도시 검색"
+        />
+        <button type="submit" id="searchBtn">검색</button>
+        <button type="button" id="geoBtn" title="현재 위치로 보기">📍</button>
+      </form>
+      <ul id="suggestions" class="suggestions" hidden></ul>
+    </header>
+
+    <main id="main">
+      <div id="placeholder" class="placeholder">
+        <div class="placeholder-icon">🌙</div>
+        <p>도시를 검색하거나 <strong>📍 현재 위치</strong> 버튼을 눌러<br />내일 날씨와 준비물을 확인하세요.</p>
+      </div>
+
+      <div id="loader" class="loader" hidden>
+        <div class="spinner"></div>
+        <p>날씨 정보를 불러오는 중…</p>
+      </div>
+
+      <div id="error" class="error-box" hidden></div>
+
+      <section id="result" class="result" hidden></section>
+    </main>
+
+    <footer class="footer">
+      <p>데이터 제공: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · API 키 불필요</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
