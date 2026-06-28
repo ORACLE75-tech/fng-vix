@@ -28,6 +28,20 @@ python3 -m http.server 8000
 
 > 현재 위치(GPS) 기능은 보안상 `http://localhost` 또는 `https://` 환경에서만 동작합니다.
 
+## 🌐 온라인 배포 / 네이버 블로그에 올리기
+
+GitHub Pages로 무료 배포하면 다음 주소에서 바로 실행됩니다:
+
+```
+https://oracle75-tech.github.io/fng-vix/
+```
+
+설정: 저장소 **Settings → Pages → Source: Deploy from a branch →
+Branch: `claude/weather-prep-app-2slfwb` / `(root)`** 저장.
+
+네이버 블로그에 넣는 방법(링크 카드/버튼)은 **[NAVER_BLOG_GUIDE.md](./NAVER_BLOG_GUIDE.md)** 를 참고하세요.
+(네이버 블로그는 본문 내 JS 실행이 불가하여 "링크 연결" 방식으로 사용합니다.)
+
 ## 🛠 기술
 
 - 순수 **HTML / CSS / JavaScript** (프레임워크·빌드 도구 없음)
