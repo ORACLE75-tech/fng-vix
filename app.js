@@ -17,7 +17,16 @@ const els = {
   loader: document.getElementById("loader"),
   error: document.getElementById("error"),
   result: document.getElementById("result"),
+  dateBar: document.getElementById("dateBar"),
+  dateInput: document.getElementById("dateInput"),
+  quickDays: document.getElementById("quickDays"),
 };
+
+/* 현재 선택된 위치/예보 데이터 (날짜 변경 시 재요청 없이 재계산) */
+const state = { data: null, label: null };
+
+/* 예보 가능 일수 (Open-Meteo 무료: 오늘 포함 최대 16일) */
+const FORECAST_DAYS = 16;
 
 /* ---------- WMO 날씨 코드 → 아이콘 / 설명 ---------- */
 const WMO = {
@@ -199,7 +208,7 @@ async function loadWeather(lat, lon, label) {
       latitude: lat,
       longitude: lon,
       timezone: "auto",
-      forecast_days: "2",
+      forecast_days: String(FORECAST_DAYS),
       hourly: [
         "temperature_2m",
         "apparent_temperature",
@@ -226,23 +235,77 @@ async function loadWeather(lat, lon, label) {
       ].join(","),
     });
     const data = await fetchJSON(`${FORECAST_URL}?${params}`);
-    const summary = buildTomorrowSummary(data, label);
-    renderResult(summary);
-    setState({ hasResult: true });
+    state.data = data;
+    state.label = label;
+
+    // 날짜 선택 가능 범위 설정 (오늘 ~ 마지막 예보일)
+    els.dateInput.min = data.daily.time[0];
+    els.dateInput.max = data.daily.time[data.daily.time.length - 1];
+    // 선택값이 없거나 범위를 벗어나면 기본값 '내일'
+    if (!els.dateInput.value ||
+        els.dateInput.value < els.dateInput.min ||
+        els.dateInput.value > els.dateInput.max) {
+      els.dateInput.value = data.daily.time[Math.min(1, data.daily.time.length - 1)];
+    }
+    show(els.dateBar);
+
+    renderForDate(els.dateInput.value);
     window.scrollTo({ top: 0, behavior: "smooth" });
   } catch (err) {
     setState({ error: `날씨 정보를 가져오지 못했습니다: ${err.message}` });
   }
 }
 
-/* ---------- 내일 데이터 요약 ---------- */
-function buildTomorrowSummary(data, label) {
-  const TOMORROW = 1; // daily 인덱스 (0=오늘, 1=내일)
-  const d = data.daily;
-  const date = new Date(d.time[TOMORROW] + "T00:00:00");
+/* 선택된 날짜로 요약 계산 후 렌더 (저장된 데이터 사용, 재요청 없음) */
+function renderForDate(dateStr) {
+  if (!state.data) return;
+  const di = state.data.daily.time.indexOf(dateStr);
+  if (di < 0) {
+    setState({ error: "선택한 날짜는 예보 범위를 벗어났습니다." });
+    return;
+  }
+  updateQuickDayButtons(dateStr);
+  const summary = buildDaySummary(state.data, state.label, di);
+  renderResult(summary);
+  setState({ hasResult: true });
+}
 
-  // 내일에 해당하는 시간(hourly) 인덱스 모으기
-  const dayStr = d.time[TOMORROW];
+/* '오늘/내일/모레' 빠른 버튼 활성화 표시 */
+function updateQuickDayButtons(dateStr) {
+  const today = todayStr();
+  const offset = daysBetween(today, dateStr);
+  els.quickDays.querySelectorAll("button").forEach((b) => {
+    b.classList.toggle("active", Number(b.dataset.offset) === offset);
+  });
+}
+
+/* ---------- 날짜 유틸 ---------- */
+function todayStr() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
+function daysBetween(fromStr, toStr) {
+  const a = new Date(fromStr + "T00:00:00");
+  const b = new Date(toStr + "T00:00:00");
+  return Math.round((b - a) / 86400000);
+}
+/* 오늘 기준 상대 표현 (오늘/내일/모레/글피/N일 후·전) + 요일 */
+function relativeDayLabel(dateStr) {
+  const off = daysBetween(todayStr(), dateStr);
+  const names = { 0: "오늘", 1: "내일", 2: "모레", 3: "글피" };
+  if (names[off]) return names[off];
+  if (off > 0) return `${off}일 후`;
+  if (off === -1) return "어제";
+  return `${-off}일 전`;
+}
+
+/* ---------- 특정 날짜(daily 인덱스 di) 데이터 요약 ---------- */
+function buildDaySummary(data, label, di) {
+  const d = data.daily;
+  const date = new Date(d.time[di] + "T00:00:00");
+
+  // 해당 날짜에 해당하는 시간(hourly) 인덱스 모으기
+  const dayStr = d.time[di];
   const idx = [];
   data.hourly.time.forEach((t, i) => { if (t.startsWith(dayStr)) idx.push(i); });
 
@@ -288,25 +351,25 @@ function buildTomorrowSummary(data, label) {
   return {
     label,
     date,
-    code: d.weather_code[TOMORROW],
-    tMax: d.temperature_2m_max[TOMORROW],
-    tMin: d.temperature_2m_min[TOMORROW],
-    feelsMax: d.apparent_temperature_max[TOMORROW],
-    feelsMin: d.apparent_temperature_min[TOMORROW],
+    code: d.weather_code[di],
+    tMax: d.temperature_2m_max[di],
+    tMin: d.temperature_2m_min[di],
+    feelsMax: d.apparent_temperature_max[di],
+    feelsMin: d.apparent_temperature_min[di],
     feelsMorning: avgAt(pick("apparent_temperature"), morn),
     feelsEvening: avgAt(pick("apparent_temperature"), eve),
     humidityAvg: avgAt(humid, humid.map((_, k) => k)),
-    popMax: d.precipitation_probability_max[TOMORROW] ?? Math.max(...pop.filter((x) => x != null), 0),
+    popMax: d.precipitation_probability_max[di] ?? Math.max(...pop.filter((x) => x != null), 0),
     popMorning: maxAt(pop, morn),
     popEvening: maxAt(pop, eve),
-    precipSum: d.precipitation_sum[TOMORROW],
+    precipSum: d.precipitation_sum[di],
     cloudAvg: avgAt(clouds, clouds.map((_, k) => k)),
-    windMax: d.wind_speed_10m_max[TOMORROW],
+    windMax: d.wind_speed_10m_max[di],
     windAvg: avgAt(wind, wind.map((_, k) => k)),
-    uvMax: d.uv_index_max[TOMORROW],
-    sunrise: new Date(d.sunrise[TOMORROW]),
-    sunset: new Date(d.sunset[TOMORROW]),
-    diurnal: d.temperature_2m_max[TOMORROW] - d.temperature_2m_min[TOMORROW],
+    uvMax: d.uv_index_max[di],
+    sunrise: new Date(d.sunrise[di]),
+    sunset: new Date(d.sunset[di]),
+    diurnal: d.temperature_2m_max[di] - d.temperature_2m_min[di],
     hourly,
   };
 }
@@ -511,6 +574,8 @@ function renderResult(s) {
   const fmtDate = s.date.toLocaleDateString("ko-KR", {
     month: "long", day: "numeric", weekday: "long",
   });
+  const dStr = `${s.date.getFullYear()}-${String(s.date.getMonth() + 1).padStart(2, "0")}-${String(s.date.getDate()).padStart(2, "0")}`;
+  const rel = relativeDayLabel(dStr);
   const fmtTime = (d) => d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 
   const adviceHTML = advice.map((a) => `
@@ -545,7 +610,7 @@ function renderResult(s) {
       <div class="summary-top">
         <div>
           <div class="summary-loc">📍 ${s.label}</div>
-          <div class="summary-date">내일 · ${fmtDate}</div>
+          <div class="summary-date">${rel} · ${fmtDate}</div>
           <div class="summary-desc">${desc}</div>
         </div>
         <div style="text-align:center">
@@ -565,7 +630,7 @@ function renderResult(s) {
     </div>
 
     <div class="card">
-      <h2>🧳 내일 이렇게 준비하세요</h2>
+      <h2>🧳 ${rel} 이렇게 준비하세요</h2>
       ${adviceHTML}
     </div>
 
@@ -625,6 +690,23 @@ els.geoBtn.addEventListener("click", () => {
     () => setState({ error: "위치 권한이 거부되었습니다. 도시 이름으로 검색해 주세요." }),
     { enableHighAccuracy: false, timeout: 10000 }
   );
+});
+
+// 날짜 직접 선택
+els.dateInput.addEventListener("change", () => {
+  if (els.dateInput.value) renderForDate(els.dateInput.value);
+});
+
+// 오늘/내일/모레 빠른 버튼
+els.quickDays.addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if (!btn || !state.data) return;
+  const offset = Number(btn.dataset.offset);
+  const target = new Date(todayStr() + "T00:00:00");
+  target.setDate(target.getDate() + offset);
+  const dateStr = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}-${String(target.getDate()).padStart(2, "0")}`;
+  els.dateInput.value = dateStr;
+  renderForDate(dateStr);
 });
 
 // 입력 중 자동완성 (디바운스)
