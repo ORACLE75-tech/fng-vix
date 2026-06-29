@@ -130,6 +130,24 @@
   .plan-head .big { font-size: 15px; color: var(--muted); }
   .plan-head .big b { font-size: 26px; color: var(--text); display: block; }
 
+  .split { margin-bottom: 18px; }
+  .split-bar { display: flex; height: 28px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
+  .split-bar span { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #04231a; }
+  .split-bar .split-diet { background: linear-gradient(90deg,#34d399,#10b981); }
+  .split-bar .split-ex { background: linear-gradient(90deg,#fb923c,#f87171); color: #fff; }
+  .split-legend { display: flex; gap: 18px; margin-top: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .split-legend b { color: var(--text); }
+  .split-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+  .split-legend .dot.diet { background: #10b981; }
+  .split-legend .dot.ex { background: #f87171; }
+
+  .cal-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 6px; }
+  .cal-table th, .cal-table td { border: 1px solid var(--line); padding: 9px 8px; }
+  .cal-table th { background: var(--card2); color: var(--muted); font-weight: 600; }
+  .cal-table td.ex-name { text-align: left; }
+  .cal-table td.ex-kcal { text-align: right; font-weight: 700; color: var(--warn); white-space: nowrap; }
+  .cal-table td.ex-dur { text-align: center; color: var(--accent2); white-space: nowrap; }
+
   .acc { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-bottom: 12px; }
   .acc h3 { background: var(--card2); padding: 14px 16px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
   .acc ul { list-style: none; padding: 8px 16px 16px; }
@@ -244,6 +262,16 @@
         <div class="big">주당 감량 속도<b id="phRate">-</b></div>
         <div class="big">하루 칼로리 적자<b id="phDeficit">-</b></div>
         <div class="big">하루 목표 섭취<b id="phIntake">-</b></div>
+        <div class="big">목표까지 총 소모 칼로리<b id="phTotal">-</b></div>
+      </div>
+
+      <!-- 칼로리 적자 분배 -->
+      <div class="split">
+        <div class="split-bar"><span class="split-diet" id="splitDietBar"></span><span class="split-ex" id="splitExBar"></span></div>
+        <div class="split-legend">
+          <span><i class="dot diet"></i> 식이로 줄이기 <b id="splitDietKcal">-</b></span>
+          <span><i class="dot ex"></i> 운동으로 소모 <b id="splitExKcal">-</b></span>
+        </div>
       </div>
 
       <div id="planBody"></div>
@@ -387,10 +415,11 @@
     const c = state.calc;
     const toLose = Math.max(c.diff, 0);
 
+    // exShare: 전체 칼로리 적자 중 '운동으로 소모'할 비중 (나머지는 식이로 줄임)
     const defs = {
-      fast: { name: '빨리 빼기', ratePct: 0.010, capRate: 1.0, label: '⚡', maxDeficit: 1000 },
-      mid:  { name: '적당히 빼기', ratePct: 0.0066, capRate: 0.7, label: '🚶', maxDeficit: 600 },
-      slow: { name: '여유 있게 빼기', ratePct: 0.0040, capRate: 0.45, label: '🌿', maxDeficit: 400 },
+      fast: { name: '빨리 빼기', ratePct: 0.010, capRate: 1.0, label: '⚡', maxDeficit: 1000, exShare: 0.40 },
+      mid:  { name: '적당히 빼기', ratePct: 0.0066, capRate: 0.7, label: '🚶', maxDeficit: 600, exShare: 0.30 },
+      slow: { name: '여유 있게 빼기', ratePct: 0.0040, capRate: 0.45, label: '🌿', maxDeficit: 400, exShare: 0.25 },
     };
 
     const out = {};
@@ -405,7 +434,12 @@
       // 섭취 칼로리는 BMR 미만으로 내려가지 않도록 보정
       let intake = Math.max(c.tdee - deficit, c.bmr * 0.95);
       deficit = c.tdee - intake; // 보정된 실제 적자
-      out[k] = { ...d, weekly, weeks, deficit, intake };
+      // 적자를 운동/식이로 분배
+      const exKcal = Math.round(deficit * d.exShare);   // 하루 운동으로 소모할 칼로리
+      const dietKcal = Math.round(deficit - exKcal);     // 하루 식이로 줄일 칼로리
+      // 목표 감량까지 총 소모해야 할 칼로리
+      const totalKcal = toLose * 7700;
+      out[k] = { ...d, weekly, weeks, deficit, intake, exKcal, dietKcal, totalKcal };
     }
     return out;
   }
@@ -416,6 +450,39 @@
     if (weeks < 8) return `약 ${Math.round(weeks)}주`;
     if (months < 12) return `약 ${Math.round(months)}개월 (${Math.round(weeks)}주)`;
     return `약 ${fmt(months / 12)}년 (${Math.round(months)}개월)`;
+  }
+
+  // ---------- 운동별 소모 칼로리 (MET 기반) ----------
+  // kcal/분 = MET × 3.5 × 체중(kg) / 200
+  function burnTable(p) {
+    const c = state.calc;
+    const ex = [
+      ['🚶 빠르게 걷기 (6.4km/h)', 5.0],
+      ['🏃 조깅 (8km/h)', 8.0],
+      ['🏃‍♂️ 달리기 (10km/h)', 10.0],
+      ['🚴 자전거 (보통 강도)', 7.5],
+      ['🪢 줄넘기', 11.0],
+      ['🏊 수영 (자유형)', 8.0],
+      ['🥾 등산', 7.0],
+      ['🔥 HIIT (고강도 인터벌)', 9.0],
+      ['🏋️ 근력 운동', 5.0],
+      ['🧘 요가/스트레칭', 3.0],
+    ];
+    const rows = ex.map(([name, met]) => {
+      const perMin = met * 3.5 * c.w / 200;
+      const kcal30 = Math.round(perMin * 30);
+      const dur = Math.round(p.exKcal / perMin); // 운동 목표 소모까지 걸리는 분
+      return `<tr><td class="ex-name">${name}</td><td class="ex-kcal">${kcal30} kcal</td><td class="ex-dur">${dur}분</td></tr>`;
+    }).join('');
+    return `
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:12px;">
+        체중 <b style="color:var(--text)">${fmt(c.w)}kg</b> 기준 운동별 소모 칼로리입니다.
+        이 플랜의 <b style="color:var(--text)">하루 운동 목표 소모 ${p.exKcal}kcal</b>를 채우려면 각 운동을 오른쪽 시간만큼 하면 됩니다.
+      </p>
+      <table class="cal-table">
+        <thead><tr><th class="ex-name">운동</th><th>30분 소모</th><th>${p.exKcal}kcal까지</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
   }
 
   // ---------- 실천사항 콘텐츠 ----------
@@ -475,7 +542,12 @@
       ],
     };
 
-    return [exercise, diet, routine];
+    const burn = {
+      title: '🔥 소비(소모) 칼로리 — 운동별 가이드',
+      html: burnTable(p),
+    };
+
+    return [exercise, burn, diet, routine];
   }
 
   // ---------- 플랜 렌더 ----------
@@ -499,6 +571,17 @@
     document.getElementById('phRate').textContent = '약 ' + fmt(p.weekly) + ' kg/주';
     document.getElementById('phDeficit').textContent = '약 ' + Math.round(p.deficit) + ' kcal';
     document.getElementById('phIntake').textContent = '약 ' + Math.round(p.intake) + ' kcal';
+    document.getElementById('phTotal').textContent = '약 ' + Math.round(p.totalKcal).toLocaleString() + ' kcal';
+
+    // 칼로리 적자 분배 막대 (식이 vs 운동)
+    const dietPct = Math.round((p.dietKcal / p.deficit) * 100);
+    const exPct = 100 - dietPct;
+    document.getElementById('splitDietBar').style.width = dietPct + '%';
+    document.getElementById('splitExBar').style.width = exPct + '%';
+    document.getElementById('splitDietBar').textContent = dietPct >= 12 ? dietPct + '%' : '';
+    document.getElementById('splitExBar').textContent = exPct >= 12 ? exPct + '%' : '';
+    document.getElementById('splitDietKcal').textContent = '약 ' + p.dietKcal + ' kcal/일';
+    document.getElementById('splitExKcal').textContent = '약 ' + p.exKcal + ' kcal/일';
 
     // 실천사항 아코디언
     const body = document.getElementById('planBody');
@@ -506,7 +589,7 @@
     body.innerHTML = blocks.map(b => `
       <div class="acc">
         <h3>${b.title}</h3>
-        <ul>${b.items.map(i => `<li>${i}</li>`).join('')}</ul>
+        ${b.html ? `<div style="padding:14px 16px;">${b.html}</div>` : `<ul>${b.items.map(i => `<li>${i}</li>`).join('')}</ul>`}
       </div>`).join('');
 
     renderWeek(planKey);
