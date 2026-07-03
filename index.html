@@ -1,644 +1,76 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>건강 진단 & 적정 체중 플래너</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
-<style>
-  :root {
-    --bg: #0f1226;
-    --bg2: #171a35;
-    --card: #1d2142;
-    --card2: #252a52;
-    --line: #313869;
-    --text: #eef1ff;
-    --muted: #a6acd8;
-    --accent: #6c7bff;
-    --accent2: #34d399;
-    --warn: #fbbf24;
-    --danger: #f87171;
-    --shadow: 0 10px 30px rgba(0,0,0,.35);
-    --radius: 18px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Noto Sans KR', system-ui, sans-serif;
-    background: radial-gradient(1200px 600px at 20% -10%, #2a2f63 0%, transparent 60%),
-                radial-gradient(900px 500px at 100% 0%, #20406b 0%, transparent 55%),
-                var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    line-height: 1.55;
-    -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1e293b" />
+  <title>내일 날씨 준비 · 옷차림·우산 알리미</title>
+  <meta name="description" content="출근·여행 전날 밤, 내일 날씨(기온·습도·비·구름)를 확인하고 옷차림과 우산 등 챙길 것을 심층적으로 정리해주는 앱" />
 
-  header.hero { text-align: center; margin-bottom: 28px; }
-  .badge {
-    display: inline-block; font-size: 13px; letter-spacing: .5px;
-    color: var(--accent2); background: rgba(52,211,153,.12);
-    border: 1px solid rgba(52,211,153,.3); padding: 6px 14px; border-radius: 999px;
-    margin-bottom: 14px;
-  }
-  h1 { font-size: 30px; font-weight: 900; letter-spacing: -.5px; }
-  h1 span { color: var(--accent); }
-  .sub { color: var(--muted); margin-top: 8px; font-size: 15px; }
+  <!-- 링크 미리보기(네이버 블로그/카카오/페이스북 등 썸네일 카드)용 Open Graph -->
+  <link rel="canonical" href="https://oracle75-tech.github.io/fng-vix/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="내일 날씨 준비" />
+  <meta property="og:title" content="🌤️ 내일 날씨 준비 · 옷차림·우산 알리미" />
+  <meta property="og:description" content="출근·여행 전날 밤, 내일 날씨(기온·습도·비·구름)를 확인하고 옷차림과 우산 등 챙길 것을 심층적으로 정리해드립니다." />
+  <meta property="og:url" content="https://oracle75-tech.github.io/fng-vix/" />
+  <meta property="og:image" content="https://oracle75-tech.github.io/fng-vix/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
 
-  .card {
-    background: linear-gradient(180deg, var(--card) 0%, var(--bg2) 100%);
-    border: 1px solid var(--line); border-radius: var(--radius);
-    box-shadow: var(--shadow); padding: 24px; margin-bottom: 22px;
-  }
-  .card h2 { font-size: 19px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-
-  .grid { display: grid; gap: 16px; }
-  .grid.cols2 { grid-template-columns: 1fr 1fr; }
-  .grid.cols3 { grid-template-columns: repeat(3, 1fr); }
-  @media (max-width: 680px) { .grid.cols2, .grid.cols3 { grid-template-columns: 1fr; } }
-
-  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 7px; font-weight: 500; }
-  .field input, .field select {
-    width: 100%; background: var(--bg); color: var(--text);
-    border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px;
-    font-size: 16px; font-family: inherit; outline: none; transition: border-color .15s, box-shadow .15s;
-  }
-  .field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,123,255,.25); }
-  .seg { display: flex; gap: 8px; }
-  .seg button {
-    flex: 1; background: var(--bg); color: var(--muted); border: 1px solid var(--line);
-    border-radius: 12px; padding: 12px; font-size: 15px; font-family: inherit; cursor: pointer; transition: all .15s;
-  }
-  .seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
-
-  .cta {
-    margin-top: 20px; width: 100%; border: none; cursor: pointer;
-    background: linear-gradient(90deg, var(--accent), #8a63ff);
-    color: #fff; font-size: 17px; font-weight: 700; font-family: inherit;
-    padding: 16px; border-radius: 14px; transition: transform .1s, filter .15s;
-  }
-  .cta:hover { filter: brightness(1.08); }
-  .cta:active { transform: scale(.99); }
-
-  #results { display: none; }
-  #results.show { display: block; animation: fade .4s ease; }
-  @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-
-  .diag-top { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between; }
-  .gauge { text-align: center; min-width: 150px; }
-  .gauge .num { font-size: 46px; font-weight: 900; line-height: 1; }
-  .gauge .lbl { color: var(--muted); font-size: 13px; margin-top: 4px; }
-  .pill { display: inline-block; padding: 7px 16px; border-radius: 999px; font-weight: 700; font-size: 15px; margin-top: 8px; }
-
-  .bar-wrap { flex: 1; min-width: 240px; }
-  .bar {
-    position: relative; height: 14px; border-radius: 999px; overflow: hidden;
-    background: linear-gradient(90deg, #60a5fa 0 18%, #34d399 18% 46%, #fbbf24 46% 62%, #fb923c 62% 80%, #f87171 80% 100%);
-  }
-  .bar .marker {
-    position: absolute; top: -6px; width: 4px; height: 26px; background: #fff;
-    border-radius: 4px; box-shadow: 0 0 0 2px rgba(0,0,0,.4); transform: translateX(-50%); transition: left .6s ease;
-  }
-  .bar-scale { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-top: 8px; }
-
-  .stat-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-top: 20px; }
-  @media (max-width:680px){ .stat-row{ grid-template-columns:1fr 1fr; } }
-  .stat { background: var(--card2); border: 1px solid var(--line); border-radius: 14px; padding: 14px; text-align: center; }
-  .stat .v { font-size: 22px; font-weight: 800; }
-  .stat .k { font-size: 12px; color: var(--muted); margin-top: 4px; }
-  .stat .v.good { color: var(--accent2); }
-  .stat .v.warn { color: var(--warn); }
-  .stat .v.bad { color: var(--danger); }
-
-  .note { background: rgba(108,123,255,.1); border: 1px solid rgba(108,123,255,.3); border-radius: 12px; padding: 14px 16px; font-size: 14px; color: var(--text); margin-top: 18px; }
-  .note b { color: var(--accent); }
-
-  .plan-tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
-  .plan-tabs button {
-    flex: 1; min-width: 120px; cursor: pointer; font-family: inherit; font-size: 15px; font-weight: 700;
-    background: var(--bg); color: var(--muted); border: 1px solid var(--line); border-radius: 12px; padding: 14px 10px; transition: all .15s; text-align: center;
-  }
-  .plan-tabs button .t-time { display: block; font-size: 12px; font-weight: 500; margin-top: 3px; opacity: .85; }
-  .plan-tabs button.on { color: #fff; border-color: transparent; }
-  .plan-tabs button.on.fast { background: linear-gradient(90deg,#f87171,#fb7185); }
-  .plan-tabs button.on.mid { background: linear-gradient(90deg,#fbbf24,#f59e0b); color:#241a00; }
-  .plan-tabs button.on.slow { background: linear-gradient(90deg,#34d399,#10b981); color:#04231a; }
-
-  .plan-head { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; padding: 16px; border-radius: 14px; background: var(--card2); border: 1px solid var(--line); margin-bottom: 18px; }
-  .plan-head .big { font-size: 15px; color: var(--muted); }
-  .plan-head .big b { font-size: 26px; color: var(--text); display: block; }
-
-  .split { margin-bottom: 18px; }
-  .split-bar { display: flex; height: 28px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); }
-  .split-bar span { display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #04231a; }
-  .split-bar .split-diet { background: linear-gradient(90deg,#34d399,#10b981); }
-  .split-bar .split-ex { background: linear-gradient(90deg,#fb923c,#f87171); color: #fff; }
-  .split-legend { display: flex; gap: 18px; margin-top: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
-  .split-legend b { color: var(--text); }
-  .split-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
-  .split-legend .dot.diet { background: #10b981; }
-  .split-legend .dot.ex { background: #f87171; }
-
-  .cal-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 6px; }
-  .cal-table th, .cal-table td { border: 1px solid var(--line); padding: 9px 8px; }
-  .cal-table th { background: var(--card2); color: var(--muted); font-weight: 600; }
-  .cal-table td.ex-name { text-align: left; }
-  .cal-table td.ex-kcal { text-align: right; font-weight: 700; color: var(--warn); white-space: nowrap; }
-  .cal-table td.ex-dur { text-align: center; color: var(--accent2); white-space: nowrap; }
-
-  .acc { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-bottom: 12px; }
-  .acc h3 { background: var(--card2); padding: 14px 16px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
-  .acc ul { list-style: none; padding: 8px 16px 16px; }
-  .acc li { padding: 9px 0 9px 26px; position: relative; font-size: 14px; border-bottom: 1px dashed var(--line); }
-  .acc li:last-child { border-bottom: none; }
-  .acc li::before { content: "✓"; position: absolute; left: 0; top: 8px; color: var(--accent2); font-weight: 900; }
-  .acc li b { color: var(--text); }
-  .emoji { font-size: 18px; }
-
-  .week { margin-top: 18px; }
-  .week table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  .week th, .week td { border: 1px solid var(--line); padding: 9px 8px; text-align: center; }
-  .week th { background: var(--card2); color: var(--muted); font-weight: 600; }
-  .week td.day { font-weight: 700; color: var(--accent); white-space: nowrap; }
-  .week td.act { text-align: left; }
-
-  .disclaimer { font-size: 12px; color: var(--muted); text-align: center; margin-top: 8px; line-height: 1.7; }
-  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; }
-  .hidden { display: none !important; }
-</style>
+  <link rel="stylesheet" href="styles.css?v=4" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>" />
 </head>
 <body>
-<div class="wrap">
-  <header class="hero">
-    <div class="badge">AI 건강 진단 · 적정 체중 · 맞춤 감량 플랜</div>
-    <h1>나의 <span>건강 상태</span> & 적정 체중 플래너</h1>
-    <p class="sub">키와 몸무게만 입력하면 현재 건강 상태를 진단하고,<br/>적정 체중까지 빼기 위한 맞춤 실천 플랜을 제시합니다.</p>
-  </header>
+  <div class="app">
+    <header class="hero">
+      <h1>🌤️ 내일 날씨 준비</h1>
+      <p class="subtitle">출근·여행 전날 밤, 내일 챙길 것을 미리 정리하세요</p>
 
-  <!-- 입력 카드 -->
-  <section class="card">
-    <h2>📋 내 정보 입력</h2>
-    <div class="grid cols2">
-      <div class="field">
-        <label for="height">키 (cm) <span style="color:var(--danger)">*</span></label>
-        <input id="height" type="number" inputmode="decimal" placeholder="예: 172" min="100" max="250" />
-      </div>
-      <div class="field">
-        <label for="weight">몸무게 (kg) <span style="color:var(--danger)">*</span></label>
-        <input id="weight" type="number" inputmode="decimal" placeholder="예: 78" min="25" max="300" />
-      </div>
-    </div>
+      <form id="searchForm" class="search" autocomplete="off">
+        <input
+          id="cityInput"
+          type="text"
+          placeholder="도시 이름 검색 (예: 서울, 부산, Tokyo)"
+          aria-label="도시 검색"
+        />
+        <button type="submit" id="searchBtn">검색</button>
+        <button type="button" id="geoBtn" title="현재 위치로 보기">📍</button>
+      </form>
+      <ul id="suggestions" class="suggestions" hidden></ul>
 
-    <div class="grid cols3" style="margin-top:16px;">
-      <div class="field">
-        <label>성별 <span style="color:var(--muted)">(선택 · 칼로리 정밀 계산용)</span></label>
-        <div class="seg" id="sexSeg">
-          <button type="button" data-sex="male" class="on">남성</button>
-          <button type="button" data-sex="female">여성</button>
+      <div class="datebar" id="dateBar" hidden>
+        <div class="quickdays" id="quickDays">
+          <button type="button" data-offset="0">오늘</button>
+          <button type="button" data-offset="1">내일</button>
+          <button type="button" data-offset="2">모레</button>
         </div>
+        <input id="dateInput" type="date" aria-label="조회할 날짜 선택" />
       </div>
-      <div class="field">
-        <label for="age">나이 (선택)</label>
-        <input id="age" type="number" inputmode="numeric" placeholder="예: 30" min="10" max="100" value="30" />
-      </div>
-      <div class="field">
-        <label for="activity">평소 활동량</label>
-        <select id="activity">
-          <option value="1.2">거의 없음 (좌식 생활)</option>
-          <option value="1.375" selected>가벼움 (주 1~3회 운동)</option>
-          <option value="1.55">보통 (주 3~5회 운동)</option>
-          <option value="1.725">활발 (주 6~7회 운동)</option>
-          <option value="1.9">매우 활발 (육체노동/선수)</option>
-        </select>
-      </div>
-    </div>
+    </header>
 
-    <button class="cta" id="analyzeBtn">🔍 건강 진단 받기</button>
-  </section>
-
-  <!-- 결과 -->
-  <div id="results">
-
-    <!-- 진단 카드 -->
-    <section class="card">
-      <h2>🩺 건강 상태 진단</h2>
-      <div class="diag-top">
-        <div class="gauge">
-          <div class="num" id="bmiNum">0</div>
-          <div class="lbl">체질량지수 (BMI)</div>
-          <div class="pill" id="bmiPill">-</div>
-        </div>
-        <div class="bar-wrap">
-          <div class="bar"><div class="marker" id="bmiMarker" style="left:0%"></div></div>
-          <div class="bar-scale">
-            <span>저체중</span><span>정상</span><span>과체중</span><span>비만</span><span>고도비만</span>
-          </div>
-          <p style="margin-top:12px; font-size:14px; color:var(--muted);" id="diagText"></p>
-        </div>
+    <main id="main">
+      <div id="placeholder" class="placeholder">
+        <div class="placeholder-icon">🌙</div>
+        <p>도시를 검색하거나 <strong>📍 현재 위치</strong> 버튼을 눌러<br />내일 날씨와 준비물을 확인하세요.</p>
       </div>
 
-      <div class="stat-row">
-        <div class="stat"><div class="v" id="sIdeal">-</div><div class="k">적정 체중 (BMI 22 기준)</div></div>
-        <div class="stat"><div class="v" id="sRange">-</div><div class="k">건강 체중 범위</div></div>
-        <div class="stat"><div class="v" id="sDiff">-</div><div class="k">목표까지 변화량</div></div>
+      <div id="loader" class="loader" hidden>
+        <div class="spinner"></div>
+        <p>날씨 정보를 불러오는 중…</p>
       </div>
 
-      <div class="note" id="healthNote"></div>
-    </section>
+      <div id="error" class="error-box" hidden></div>
 
-    <!-- 플랜 카드 -->
-    <section class="card" id="planCard">
-      <h2>🎯 적정 체중까지 — 유형별 감량 플랜</h2>
-      <div class="plan-tabs">
-        <button data-plan="fast" class="fast">⚡ 빨리 빼기<span class="t-time" id="ttFast">-</span></button>
-        <button data-plan="mid" class="mid">🚶 적당히 빼기<span class="t-time" id="ttMid">-</span></button>
-        <button data-plan="slow" class="slow">🌿 여유 있게 빼기<span class="t-time" id="ttSlow">-</span></button>
-      </div>
+      <section id="result" class="result" hidden></section>
+    </main>
 
-      <div class="plan-head">
-        <div class="big">예상 소요 기간<b id="phTime">-</b></div>
-        <div class="big">주당 감량 속도<b id="phRate">-</b></div>
-        <div class="big">하루 칼로리 적자<b id="phDeficit">-</b></div>
-        <div class="big">하루 목표 섭취<b id="phIntake">-</b></div>
-        <div class="big">목표까지 총 소모 칼로리<b id="phTotal">-</b></div>
-      </div>
-
-      <!-- 칼로리 적자 분배 -->
-      <div class="split">
-        <div class="split-bar"><span class="split-diet" id="splitDietBar"></span><span class="split-ex" id="splitExBar"></span></div>
-        <div class="split-legend">
-          <span><i class="dot diet"></i> 식이로 줄이기 <b id="splitDietKcal">-</b></span>
-          <span><i class="dot ex"></i> 운동으로 소모 <b id="splitExKcal">-</b></span>
-        </div>
-      </div>
-
-      <div id="planBody"></div>
-
-      <div class="week" id="weekWrap">
-        <h2 style="font-size:16px; margin:6px 0 12px;">🗓️ 주간 루틴 예시</h2>
-        <table>
-          <thead><tr><th>요일</th><th>운동</th><th>식이 포인트</th></tr></thead>
-          <tbody id="weekBody"></tbody>
-        </table>
-      </div>
-
-      <p class="disclaimer">
-        ※ 본 결과는 일반적인 건강 정보에 기반한 참고용 추정치이며 의학적 진단·처방이 아닙니다.<br/>
-        지방 1kg ≈ 7,700kcal 기준으로 계산되었습니다. 안전한 감량 속도는 주당 체중의 0.5~1% 이내를 권장합니다.<br/>
-        만성질환·임신·복용 약물이 있거나 급격한 변화가 필요한 경우 반드시 전문의와 상담하세요.
-      </p>
-    </section>
-
+    <footer class="footer">
+      <p>데이터 제공: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · API 키 불필요</p>
+    </footer>
   </div>
 
-  <footer>Made with ❤️ · 건강한 변화는 작은 실천에서 시작됩니다</footer>
-</div>
-
-<script>
-  // ---------- 상태 ----------
-  const state = { sex: 'male', plan: 'fast', calc: null };
-
-  // 성별 토글
-  document.querySelectorAll('#sexSeg button').forEach(b => {
-    b.addEventListener('click', () => {
-      document.querySelectorAll('#sexSeg button').forEach(x => x.classList.remove('on'));
-      b.classList.add('on');
-      state.sex = b.dataset.sex;
-    });
-  });
-
-  // ---------- BMI 분류 (대한비만학회 / 아시아-태평양 기준) ----------
-  function classifyBMI(bmi) {
-    if (bmi < 18.5) return { label: '저체중', color: '#60a5fa', tone: 'warn', risk: '낮음(영양 부족 주의)' };
-    if (bmi < 23)   return { label: '정상',   color: '#34d399', tone: 'good', risk: '낮음' };
-    if (bmi < 25)   return { label: '과체중(위험체중)', color: '#fbbf24', tone: 'warn', risk: '경계' };
-    if (bmi < 30)   return { label: '비만 1단계', color: '#fb923c', tone: 'bad', risk: '중등도' };
-    if (bmi < 35)   return { label: '비만 2단계', color: '#f87171', tone: 'bad', risk: '높음' };
-    return { label: '고도비만(3단계)', color: '#ef4444', tone: 'bad', risk: '매우 높음' };
-  }
-
-  // BMI 값을 0~100% 게이지 위치로 (15~40 범위 매핑)
-  function bmiToPct(bmi) {
-    const min = 15, max = 40;
-    return Math.max(0, Math.min(100, ((bmi - min) / (max - min)) * 100));
-  }
-
-  // Mifflin-St Jeor BMR
-  function bmr(sex, w, h, age) {
-    return sex === 'male'
-      ? 10 * w + 6.25 * h - 5 * age + 5
-      : 10 * w + 6.25 * h - 5 * age - 161;
-  }
-
-  // ---------- 메인 계산 ----------
-  function analyze() {
-    const h = parseFloat(document.getElementById('height').value);
-    const w = parseFloat(document.getElementById('weight').value);
-    const age = parseInt(document.getElementById('age').value) || 30;
-    const act = parseFloat(document.getElementById('activity').value);
-
-    if (!h || !w || h < 100 || h > 250 || w < 25 || w > 300) {
-      alert('키(100~250cm)와 몸무게(25~300kg)를 올바르게 입력해 주세요.');
-      return;
-    }
-
-    const hm = h / 100;
-    const bmi = w / (hm * hm);
-    const cls = classifyBMI(bmi);
-    const ideal = 22 * hm * hm;                 // 적정 체중 (BMI 22)
-    const rangeLo = 18.5 * hm * hm;
-    const rangeHi = 22.9 * hm * hm;
-    const diff = w - ideal;                      // +면 감량 필요
-    const base = bmr(state.sex, w, h, age);
-    const tdee = base * act;                      // 유지 칼로리
-
-    state.calc = { h, w, hm, age, bmi, cls, ideal, rangeLo, rangeHi, diff, bmr: base, tdee };
-
-    renderDiagnosis();
-    renderPlan(state.plan);
-
-    document.getElementById('results').classList.add('show');
-    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function fmt(n) { return (Math.round(n * 10) / 10).toFixed(1); }
-
-  // ---------- 진단 렌더 ----------
-  function renderDiagnosis() {
-    const c = state.calc;
-    document.getElementById('bmiNum').textContent = fmt(c.bmi);
-    const pill = document.getElementById('bmiPill');
-    pill.textContent = c.cls.label;
-    pill.style.background = c.cls.color + '22';
-    pill.style.color = c.cls.color;
-    pill.style.border = '1px solid ' + c.cls.color + '66';
-
-    document.getElementById('bmiMarker').style.left = bmiToPct(c.bmi) + '%';
-
-    document.getElementById('sIdeal').textContent = fmt(c.ideal) + ' kg';
-    document.getElementById('sRange').textContent = fmt(c.rangeLo) + '~' + fmt(c.rangeHi) + ' kg';
-
-    const sDiff = document.getElementById('sDiff');
-    if (Math.abs(c.diff) < 0.5) {
-      sDiff.textContent = '유지'; sDiff.className = 'v good';
-    } else if (c.diff > 0) {
-      sDiff.textContent = '-' + fmt(c.diff) + ' kg'; sDiff.className = 'v ' + (c.diff > 7 ? 'bad' : 'warn');
-    } else {
-      sDiff.textContent = '+' + fmt(-c.diff) + ' kg'; sDiff.className = 'v warn';
-    }
-
-    document.getElementById('diagText').innerHTML =
-      `현재 BMI는 <b style="color:${c.cls.color}">${fmt(c.bmi)} (${c.cls.label})</b> 이며, ` +
-      `관련 건강 위험도는 <b>${c.cls.risk}</b> 수준입니다. ` +
-      `기초대사량(BMR)은 약 <b>${Math.round(c.bmr)}kcal</b>, 하루 유지 칼로리(TDEE)는 약 <b>${Math.round(c.tdee)}kcal</b>로 추정됩니다.`;
-
-    const note = document.getElementById('healthNote');
-    if (c.diff > 0.5) {
-      note.innerHTML = `🎯 적정 체중(BMI 22)인 <b>${fmt(c.ideal)}kg</b>까지 약 <b>${fmt(c.diff)}kg</b> 감량을 목표로 아래 맞춤 플랜을 활용하세요. ` +
-        `무리한 단식보다 <b>꾸준한 칼로리 적자 + 근력/유산소 병행</b>이 핵심입니다.`;
-      document.getElementById('planCard').classList.remove('hidden');
-    } else if (c.diff < -0.5) {
-      note.innerHTML = `현재 적정 체중보다 가벼운 상태입니다. 무리한 감량보다는 <b>균형 잡힌 식사와 근력 운동으로 건강한 체중 회복</b>을 권장합니다. ` +
-        `아래 감량 플랜은 참고용으로만 확인하세요.`;
-      document.getElementById('planCard').classList.add('hidden');
-    } else {
-      note.innerHTML = `🎉 축하합니다! 이미 <b>적정 체중 범위</b>에 있습니다. 현재 습관을 유지하며 <b>근육량 관리와 체성분 개선</b>에 집중하세요.`;
-      document.getElementById('planCard').classList.add('hidden');
-    }
-  }
-
-  // ---------- 플랜 정의 ----------
-  // 빨리: 주 1.0% (상한), 적당: 0.66%, 여유: 0.4% — 안전 범위 내에서 차등
-  function planParams() {
-    const c = state.calc;
-    const toLose = Math.max(c.diff, 0);
-
-    // exShare: 전체 칼로리 적자 중 '운동으로 소모'할 비중 (나머지는 식이로 줄임)
-    const defs = {
-      fast: { name: '빨리 빼기', ratePct: 0.010, capRate: 1.0, label: '⚡', maxDeficit: 1000, exShare: 0.40 },
-      mid:  { name: '적당히 빼기', ratePct: 0.0066, capRate: 0.7, label: '🚶', maxDeficit: 600, exShare: 0.30 },
-      slow: { name: '여유 있게 빼기', ratePct: 0.0040, capRate: 0.45, label: '🌿', maxDeficit: 400, exShare: 0.25 },
-    };
-
-    const out = {};
-    for (const k in defs) {
-      const d = defs[k];
-      // 주당 감량(kg): 체중의 비율과 절대 상한(capRate) 중 작은 값, 최소 0.2kg
-      let weekly = Math.min(c.w * d.ratePct, d.capRate);
-      weekly = Math.max(weekly, 0.2);
-      const weeks = toLose > 0 ? toLose / weekly : 0;
-      // 하루 칼로리 적자: 주당 감량 * 7700 / 7, 단 안전 상한 적용
-      let deficit = Math.min((weekly * 7700) / 7, d.maxDeficit);
-      // 섭취 칼로리는 BMR 미만으로 내려가지 않도록 보정
-      let intake = Math.max(c.tdee - deficit, c.bmr * 0.95);
-      deficit = c.tdee - intake; // 보정된 실제 적자
-      // 적자를 운동/식이로 분배
-      const exKcal = Math.round(deficit * d.exShare);   // 하루 운동으로 소모할 칼로리
-      const dietKcal = Math.round(deficit - exKcal);     // 하루 식이로 줄일 칼로리
-      // 목표 감량까지 총 소모해야 할 칼로리
-      const totalKcal = toLose * 7700;
-      out[k] = { ...d, weekly, weeks, deficit, intake, exKcal, dietKcal, totalKcal };
-    }
-    return out;
-  }
-
-  function weeksToText(weeks) {
-    if (weeks <= 0) return '—';
-    const months = weeks / 4.345;
-    if (weeks < 8) return `약 ${Math.round(weeks)}주`;
-    if (months < 12) return `약 ${Math.round(months)}개월 (${Math.round(weeks)}주)`;
-    return `약 ${fmt(months / 12)}년 (${Math.round(months)}개월)`;
-  }
-
-  // ---------- 운동별 소모 칼로리 (MET 기반) ----------
-  // kcal/분 = MET × 3.5 × 체중(kg) / 200
-  function burnTable(p) {
-    const c = state.calc;
-    const ex = [
-      ['🚶 빠르게 걷기 (6.4km/h)', 5.0],
-      ['🏃 조깅 (8km/h)', 8.0],
-      ['🏃‍♂️ 달리기 (10km/h)', 10.0],
-      ['🚴 자전거 (보통 강도)', 7.5],
-      ['🪢 줄넘기', 11.0],
-      ['🏊 수영 (자유형)', 8.0],
-      ['🥾 등산', 7.0],
-      ['🔥 HIIT (고강도 인터벌)', 9.0],
-      ['🏋️ 근력 운동', 5.0],
-      ['🧘 요가/스트레칭', 3.0],
-    ];
-    const rows = ex.map(([name, met]) => {
-      const perMin = met * 3.5 * c.w / 200;
-      const kcal30 = Math.round(perMin * 30);
-      const dur = Math.round(p.exKcal / perMin); // 운동 목표 소모까지 걸리는 분
-      return `<tr><td class="ex-name">${name}</td><td class="ex-kcal">${kcal30} kcal</td><td class="ex-dur">${dur}분</td></tr>`;
-    }).join('');
-    return `
-      <p style="font-size:13.5px;color:var(--muted);margin-bottom:12px;">
-        체중 <b style="color:var(--text)">${fmt(c.w)}kg</b> 기준 운동별 소모 칼로리입니다.
-        이 플랜의 <b style="color:var(--text)">하루 운동 목표 소모 ${p.exKcal}kcal</b>를 채우려면 각 운동을 오른쪽 시간만큼 하면 됩니다.
-      </p>
-      <table class="cal-table">
-        <thead><tr><th class="ex-name">운동</th><th>30분 소모</th><th>${p.exKcal}kcal까지</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-  }
-
-  // ---------- 실천사항 콘텐츠 ----------
-  function actionContent(planKey, p) {
-    const c = state.calc;
-    const steps = Math.round(planKey === 'fast' ? 12000 : planKey === 'mid' ? 9000 : 7000);
-    const protein = Math.round(c.w * (planKey === 'fast' ? 1.6 : planKey === 'mid' ? 1.4 : 1.2));
-    const water = fmt(Math.max(1.5, c.w * 0.033));
-    const cardioMin = planKey === 'fast' ? '45~60분' : planKey === 'mid' ? '30~40분' : '20~30분';
-    const cardioFreq = planKey === 'fast' ? '주 5~6회' : planKey === 'mid' ? '주 4회' : '주 3회';
-    const strFreq = planKey === 'fast' ? '주 3~4회' : planKey === 'mid' ? '주 2~3회' : '주 2회';
-
-    const exercise = {
-      title: '🏃 운동법',
-      items: planKey === 'fast' ? [
-        `<b>유산소 (${cardioFreq}, ${cardioMin}):</b> 빠르게 걷기→조깅 인터벌, 사이클, 줄넘기. 심박수 최대치의 70~85% 유지.`,
-        `<b>고강도 인터벌(HIIT, 주 2회):</b> 20초 전력 + 40초 휴식 × 8세트 (버피·마운틴클라이머·점프스쿼트).`,
-        `<b>근력 운동 (${strFreq}):</b> 스쿼트·런지·푸시업·플랭크·데드리프트 등 복합 운동 위주, 3세트 × 12~15회.`,
-        `<b>일상 활동:</b> 하루 <b>${steps.toLocaleString()}보</b> 목표, 엘리베이터 대신 계단, 한 정거장 먼저 내려 걷기.`,
-        `<b>휴식:</b> 주 1회 완전 휴식으로 부상·번아웃 방지.`,
-      ] : planKey === 'mid' ? [
-        `<b>유산소 (${cardioFreq}, ${cardioMin}):</b> 빠르게 걷기, 가벼운 조깅, 자전거. 대화는 가능하되 숨이 약간 찰 정도.`,
-        `<b>근력 운동 (${strFreq}):</b> 스쿼트·런지·푸시업·플랭크 3세트 × 10~12회로 기초 근육량 유지.`,
-        `<b>인터벌 걷기:</b> 3분 빠르게 + 2분 천천히 반복 — 무릎 부담 적고 지방 연소 효율적.`,
-        `<b>일상 활동:</b> 하루 <b>${steps.toLocaleString()}보</b>, 점심 후 10분 산책 습관화.`,
-      ] : [
-        `<b>유산소 (${cardioFreq}, ${cardioMin}):</b> 편안한 속도의 걷기·가벼운 자전거·수영 등 부담 없는 활동.`,
-        `<b>근력 운동 (${strFreq}):</b> 맨몸 스쿼트·벽 푸시업·플랭크 등 가벼운 강도로 시작해 점진적 증가.`,
-        `<b>스트레칭/요가:</b> 매일 10분, 유연성과 자세 교정 + 스트레스 완화.`,
-        `<b>일상 활동:</b> 하루 <b>${steps.toLocaleString()}보</b>, 앉아 있는 시간 1시간마다 3분씩 일어나 움직이기.`,
-      ],
-    };
-
-    const diet = {
-      title: '🥗 식이요법',
-      items: [
-        `<b>하루 목표 섭취:</b> 약 <b>${Math.round(p.intake)}kcal</b> (유지 ${Math.round(c.tdee)}kcal − 적자 ${Math.round(p.deficit)}kcal).`,
-        `<b>단백질 충분히:</b> 하루 <b>${protein}g</b> 이상 (닭가슴살·계란·두부·생선·그릭요거트). 근손실 방지 + 포만감.`,
-        `<b>탄수화물:</b> 정제 탄수(흰쌀·빵·설탕) ↓, <b>현미·고구마·귀리 등 복합 탄수</b>로 대체. ${planKey==='fast'?'저녁 탄수 절반으로 줄이기.':'끼니마다 주먹 1개 분량.'}`,
-        `<b>채소·식이섬유:</b> 매 끼니 채소를 접시의 절반으로. 식사 시 <b>채소 → 단백질 → 탄수</b> 순서로.`,
-        `<b>물 ${water}L/일:</b> 식전 물 한 컵으로 과식 방지, 가당 음료·주류 줄이기.`,
-        planKey === 'fast'
-          ? `<b>간헐적 단식(선택):</b> 16:8 — 12~20시 사이에만 식사, 야식·간식 끊기.`
-          : `<b>가공식품·야식 줄이기:</b> 배고플 땐 견과 한 줌·과일·삶은 계란 등 건강 간식으로.`,
-      ],
-    };
-
-    const routine = {
-      title: '⏰ 매일 루틴',
-      items: [
-        `<b>아침:</b> 기상 후 물 한 컵 → 가벼운 스트레칭 5분 → 단백질 중심 아침. 매일 같은 시간 체중 기록.`,
-        `<b>낮:</b> 점심은 채소·단백질 위주, 식후 10~15분 산책. 앉아서 일한다면 1시간마다 일어나 움직이기.`,
-        `<b>저녁:</b> 운동 또는 활동, 잠들기 <b>3시간 전 식사 마치기</b>. 저녁은 가볍게.`,
-        `<b>수면:</b> <b>7~8시간</b> 숙면 — 수면 부족은 식욕 호르몬(그렐린)을 높여 폭식을 유발합니다.`,
-        `<b>기록:</b> 식단·운동·체중을 앱/노트에 기록하면 성공률이 크게 올라갑니다. 주 1회 같은 조건에서 측정.`,
-        `<b>마인드셋:</b> 완벽보다 <b>꾸준함</b>. 한 끼 과식했다고 포기 금지 — 다음 끼니부터 다시 시작.`,
-      ],
-    };
-
-    const burn = {
-      title: '🔥 소비(소모) 칼로리 — 운동별 가이드',
-      html: burnTable(p),
-    };
-
-    return [exercise, burn, diet, routine];
-  }
-
-  // ---------- 플랜 렌더 ----------
-  function renderPlan(planKey) {
-    state.plan = planKey;
-    const params = planParams();
-    const p = params[planKey];
-
-    // 탭 시간 라벨
-    document.getElementById('ttFast').textContent = weeksToText(params.fast.weeks);
-    document.getElementById('ttMid').textContent = weeksToText(params.mid.weeks);
-    document.getElementById('ttSlow').textContent = weeksToText(params.slow.weeks);
-
-    // 탭 활성화
-    document.querySelectorAll('.plan-tabs button').forEach(b => {
-      b.classList.toggle('on', b.dataset.plan === planKey);
-    });
-
-    // 헤더 수치
-    document.getElementById('phTime').textContent = weeksToText(p.weeks);
-    document.getElementById('phRate').textContent = '약 ' + fmt(p.weekly) + ' kg/주';
-    document.getElementById('phDeficit').textContent = '약 ' + Math.round(p.deficit) + ' kcal';
-    document.getElementById('phIntake').textContent = '약 ' + Math.round(p.intake) + ' kcal';
-    document.getElementById('phTotal').textContent = '약 ' + Math.round(p.totalKcal).toLocaleString() + ' kcal';
-
-    // 칼로리 적자 분배 막대 (식이 vs 운동)
-    const dietPct = Math.round((p.dietKcal / p.deficit) * 100);
-    const exPct = 100 - dietPct;
-    document.getElementById('splitDietBar').style.width = dietPct + '%';
-    document.getElementById('splitExBar').style.width = exPct + '%';
-    document.getElementById('splitDietBar').textContent = dietPct >= 12 ? dietPct + '%' : '';
-    document.getElementById('splitExBar').textContent = exPct >= 12 ? exPct + '%' : '';
-    document.getElementById('splitDietKcal').textContent = '약 ' + p.dietKcal + ' kcal/일';
-    document.getElementById('splitExKcal').textContent = '약 ' + p.exKcal + ' kcal/일';
-
-    // 실천사항 아코디언
-    const body = document.getElementById('planBody');
-    const blocks = actionContent(planKey, p);
-    body.innerHTML = blocks.map(b => `
-      <div class="acc">
-        <h3>${b.title}</h3>
-        ${b.html ? `<div style="padding:14px 16px;">${b.html}</div>` : `<ul>${b.items.map(i => `<li>${i}</li>`).join('')}</ul>`}
-      </div>`).join('');
-
-    renderWeek(planKey);
-  }
-
-  function renderWeek(planKey) {
-    const plans = {
-      fast: [
-        ['월', '근력(전신) 40분 + 유산소 20분', '고단백 저탄수, 야식 금지'],
-        ['화', 'HIIT 25분 + 코어', '간헐적 단식 16:8 시작'],
-        ['수', '유산소(조깅/사이클) 50분', '채소·단백질 위주, 물 충분히'],
-        ['목', '근력(하체 집중) 40분', '정제 탄수 제한'],
-        ['금', 'HIIT 25분 + 유산소 20분', '저녁 탄수 절반'],
-        ['토', '유산소 60분(등산·빠른걷기)', '치팅 대신 가벼운 보상식'],
-        ['일', '완전 휴식 + 스트레칭', '규칙적 식사, 수면 8시간'],
-      ],
-      mid: [
-        ['월', '근력(전신) 30분', '단백질 챙기기, 채소 절반'],
-        ['화', '빠르게 걷기 35분', '정제 탄수 줄이기'],
-        ['수', '근력 + 코어 30분', '식후 산책 15분'],
-        ['목', '인터벌 걷기 35분', '물 충분히, 야식 줄이기'],
-        ['금', '근력(하체) 30분', '균형 잡힌 식사'],
-        ['토', '유산소 40분(자전거/등산)', '가벼운 보상식 허용'],
-        ['일', '휴식 + 스트레칭/요가', '수면 7~8시간'],
-      ],
-      slow: [
-        ['월', '편안한 걷기 25분', '채소·단백질 위주'],
-        ['화', '맨몸 근력 20분', '가공식품 줄이기'],
-        ['수', '요가/스트레칭 20분', '식후 가벼운 산책'],
-        ['목', '걷기/수영 25분', '물 충분히'],
-        ['금', '맨몸 근력 20분', '규칙적인 식사 시간'],
-        ['토', '가벼운 야외활동 30분', '주말 과식 주의'],
-        ['일', '휴식 + 스트레칭', '충분한 수면'],
-      ],
-    };
-    document.getElementById('weekBody').innerHTML = plans[planKey].map(r =>
-      `<tr><td class="day">${r[0]}</td><td class="act">${r[1]}</td><td class="act">${r[2]}</td></tr>`
-    ).join('');
-  }
-
-  // ---------- 이벤트 ----------
-  document.getElementById('analyzeBtn').addEventListener('click', analyze);
-  document.querySelectorAll('.plan-tabs button').forEach(b => {
-    b.addEventListener('click', () => renderPlan(b.dataset.plan));
-  });
-  // 엔터키로 분석
-  ['height', 'weight', 'age'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') analyze(); });
-  });
-</script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
